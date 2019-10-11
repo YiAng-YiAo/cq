@@ -316,9 +316,9 @@ function getCurrencyConfig(config)
 	local type, value, discount
 	local currencyRate = math.random(1,100)
 	if (config.ybProb >= currencyRate) then
-		type, value = NumericType_YuanBao, config.ybPrice
+		type, value = NumericType_YuanBao, 5 * config.ybPrice
 	else
-		type, value = NumericType_Gold, config.goldPrice
+		type, value = NumericType_Gold, 5 * config.goldPrice
 	end
 
 	discount = storecommon.discount_0
