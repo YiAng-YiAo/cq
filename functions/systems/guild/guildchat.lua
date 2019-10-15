@@ -24,7 +24,23 @@ function handleChat(actor, packet)
 	local content = LDataPack.readString(packet)
 	handleChatContent(actor, content)
 end
--- 
+
+function sendSystemTips(actor,level,pos,tips)
+	local l = LActor.getZhuanShengLevel(actor) * 1000
+	l = l + LActor.getLevel(actor)
+	if l < level then 
+		return
+	end
+	local npack = LDataPack.allocPacket(actor, Protocol.CMD_Chat, Protocol.sChatCmd_Tipmsg)
+	if npack == nil then 
+		return
+	end
+	LDataPack.writeInt(npack,level)
+	LDataPack.writeInt(npack,pos)
+	LDataPack.writeString(npack,tips)
+	LDataPack.flush(npack)
+end
+
 function handleChatContent(actor, content)
 	
 	local guild = LActor.getGuildPtr(actor)
@@ -32,7 +48,20 @@ function handleChatContent(actor, content)
 
 	local nowTime = System.getNowTime()
 	local actorVar = guildcommon.getActorVar(actor)
-
+	
+	local level = LActor.getZhuanShengLevel(actor) * 1000
+	level = level + LActor.getLevel(actor)
+	if level < 3000 then 
+		print("global chat level")
+		local totalcash = LActor.getRecharge(actor)
+		print(totalcash)
+		if totalcash < 100000 then 
+			print("........global chat level")
+			sendSystemTips(actor,1,2,"3转或充值100元开启世界聊天")
+			return false
+		end
+	end
+	
 	if actorVar.lastchat ~= nil and (nowTime - actorVar.lastchat < global_chat_cd) then
 		print("guild chat cd : "..actorVar.lastchat)
 		return 
