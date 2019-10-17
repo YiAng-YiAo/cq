@@ -275,7 +275,7 @@ require("systems.richman.richmansystem")
 require("systems.city.citysystem")
 
 --开服激活角色奖励
---require("systems.loginactivate.loginactivate")
+require("systems.loginactivate.loginactivate")
 
 
 --神兵
