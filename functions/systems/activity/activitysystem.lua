@@ -212,6 +212,25 @@ local function loadTime(conf)
         local et = hefutime + d*24*3600 + h*3600 + m*60
 
         return st, et
+    elseif conf.timeType == 3 then
+        --startTime
+        local d,h,m = string.match(conf.startTime, "(%d+)-(%d+):(%d+)")
+        if d== nil or h == nil or m == nil then
+            return 0,0,true
+        end
+
+        local st = System.getOpenServerStartDateTime()
+        st = st + d*24*3600 + h*3600 + m*60
+
+        --endTime
+        d,h,m,lt = string.match(conf.endTime, "(%d+)-(%d+):(%d+)-(%a)")
+        if d== nil or h == nil or m == nil then
+            return 0,0,true
+        end
+
+        local et = System.getOpenServerStartDateTime()
+        et = et + d*24*3600 + h*3600 + m*60
+        return st, et
     else
         return 0,0,true
     end
@@ -365,6 +384,28 @@ local function loadConfig()
 				varClear = false
 			end
 
+			if et < System.getNowTime() and conf.timeType == 3 then
+				local openTime = math.floor(System.getOpenServerStartDateTime()/24/3600)
+				local nowtime = math.floor(System.getNowTime()/24/3600)
+				local loop = nowtime - openTime
+				activities[id] = {
+					id=id, startTime=et, endTime=et + loop * 24 * 3600,
+					type=conf.activityType,
+					mark="0-0:0365-0:0",
+					varClear = varClear, --就不应该有这破玩意
+				}
+				count = count + 1
+				print("++++++++++++++++++++++++++openTime:" .. openTime .. "+++++++++++++++++++++++")
+				print("++++++++++++++++++++++++++nowtime:" .. nowtime .. "+++++++++++++++++++++++")
+				print("++++++++++++++++++++++++++loop:" .. loop .. "+++++++++++++++++++++++")
+				print("++++++++++++++++++++++++++activitiesId:" .. activities[id].id .. "+++++++++++++++++++++++")
+				print("++++++++++++++++++++++++++startTime:" .. activities[id].startTime .. "+++++++++++++++++++++++")
+				print("++++++++++++++++++++++++++endTime:" .. activities[id].endTime .. "+++++++++++++++++++++++")
+				print("++++++++++++++++++++++++++count:" .. count .. "+++++++++++++++++++++++")
+				print("++++++++++++++++++++++++++mark:" .. activities[id].mark .. "+++++++++++++++++++++++")
+			end	
+
+			
 			if et > System.getNowTime() then
 				activities[id] = {
 					id=id, startTime=st, endTime=et,

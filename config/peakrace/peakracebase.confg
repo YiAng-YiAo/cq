@@ -1,6 +1,6 @@
 --D-巅峰赛季.xlsx 基础配置
 PeakRaceBase={
-	openTime = "2018.1.15",
+	openTime = "2019.10.13",
 	needZsLv = 5,
 	openDay = 21,
 	interval = 14,

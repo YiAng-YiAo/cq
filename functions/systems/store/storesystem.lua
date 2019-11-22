@@ -488,7 +488,9 @@ function handleQueryFeatsInfo(actor, packet)
 	local pos1 = LDataPack.getPosition(pack)
 	LDataPack.writeInt(pack, count)
 	for k,v in pairs(FeatsStore) do
+		print("in here ++++++++++++++++++++++++++++++++++++")
 		if var.featsExchange[k] then
+			print("+++++++++++++++++++++var.featsExchange[k]:++++++++++++++++++++++++++++++++++++" .. var.featsExchange[k])
 			LDataPack.writeInt(pack, k)
 			LDataPack.writeInt(pack, var.featsExchange[k])
 			count = count + 1
