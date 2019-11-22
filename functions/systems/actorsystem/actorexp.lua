@@ -33,6 +33,7 @@ local function onAddExp(actor, level, exp, nadd)
 end
 
 function onLevelUp(actor, level)
+	if level < 50 and level ~= 0 and level ~= 1 and level ~= 5 and level ~= 15 and level ~= 25 and level ~= 35 and level ~= 10 and level ~= 20 and level ~= 26 and level ~= 30 and level ~= 40 then return end
 	LActor.onLevelUp(actor)
 
 	actorevent.onEvent(actor, aeLevel, level)

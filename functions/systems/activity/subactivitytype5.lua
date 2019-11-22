@@ -5,6 +5,36 @@ module("subactivitytype5", package.seeall)
 local subType = 5
 local prot = Protocol
 
+--检查是否投资
+function checkISInvest(actor, id)
+    print("checkISInvest")
+    local var = activitysystem.getSubVar(actor,id)
+    --table.print(var)
+    print(var.investStatus)
+    if var.investStatus == 0 or var.investStatus == nil then
+        print("false")
+        return false
+    else
+        print("true")
+        return true
+    end        
+end
+
+--投资
+function investment(actor, id)
+    print("investment")
+    local var = activitysystem.getSubVar(actor,id)
+    var.investStatus = true
+    local investStatus = 0
+    if(var.investStatus) then
+        investStatus = 1
+    end
+    local npack = LDataPack.allocPacket(actor, Protocol.CMD_Activity, 31)
+    LDataPack.writeInt(npack, investStatus)
+    LDataPack.flush(npack)
+end
+
+
 function loginLogin(actor, id)
     local var = activitysystem.getSubVar(actor, id)
     if var.loginTime == nil then var.loginTime = 0 end
@@ -15,10 +45,25 @@ function loginLogin(actor, id)
         var.loginTime = now_t
     end
 
+    --检查是否投资
+    local investStatus = checkISInvest(actor,id)
+    if var.investStatus == nil then var.investStatus = 0 end
+    if(investStatus) then
+        var.investStatus = 1
+    end
+
     local npack = LDataPack.allocPacket(actor, prot.CMD_Activity, prot.sActivityCmd_SendLoginDaysData)
     LDataPack.writeInt(npack, id)
     LDataPack.writeInt(npack, var.days or 0)
     LDataPack.flush(npack)
+
+    if id==1005 then
+        local npack1 = LDataPack.allocPacket(actor, Protocol.CMD_Activity, 31)
+        LDataPack.writeInt(npack1, var.investStatus or 0)
+        LDataPack.flush(npack1)
+    end
+
+
 end
 
 --下发记录信息
@@ -30,6 +75,15 @@ end
 
 --领奖协议回调
 subactivities.getRewardFuncs[subType] = function(id, typeconfig, actor, record, packet)
+    print("getRewardFuncs")
+    print("subType "..subType)
+    print("id "..id)
+    if id==1005 then
+        if checkISInvest(actor,id)==false then
+            LActor.sendTipWithId(actor, 8)
+            return
+        end
+    end
     local idx = LDataPack.readShort(packet)
     local conf = typeconfig[id]
     if conf == nil then return end

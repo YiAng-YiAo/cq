@@ -44,7 +44,7 @@ TimerConfig=
 	-- { hour=20, minute = 0, func= "openGuildBattle"} , --每天20点开启决战沙城玩法
 
 
-	{hour={11, 21}, minute=55, func="NoticeOpenCrossArena", params = {300}}, 	--开启跨服竞技场预告 params预告剩余时间
-	{hour={12, 22}, minute=0, func="OpenCrossArenaFb", params = {1800}}, 	--开启跨服竞技场  params 活动时间
-	{day = 1,hour=0, minute=0, func="ResetCrossArenaRankingList"}, 	--重置跨服竞技场的排行榜
+	-- {hour={11, 21}, minute=55, func="NoticeOpenCrossArena", params = {300}}, 	--开启跨服竞技场预告 params预告剩余时间
+	-- {hour={12, 22}, minute=0, func="OpenCrossArenaFb", params = {1800}}, 	--开启跨服竞技场  params 活动时间
+	-- {day = 1,hour=0, minute=0, func="ResetCrossArenaRankingList"}, 	--重置跨服竞技场的排行榜
 }

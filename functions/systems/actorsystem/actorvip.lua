@@ -69,7 +69,6 @@ local function onReqRewards(actor, packet)
     if LActor.getVipLevel(actor) < level then
         return
     end
-
     local rewards = VipConfig[level].awards
     if not LActor.canGiveAwards(actor, rewards) then
         return
@@ -83,7 +82,14 @@ local function onReqRewards(actor, packet)
     print("on ReqVipRewards. record:"..data.record)
     LDataPack.writeInt(npack, data.record)
     LDataPack.flush(npack)
-
+    if level==21 then
+        local actorId = LActor.getActorId(actor)
+        monthcard.buyMonth(actorId)
+    end
+    if level==23 then
+        local actorId = LActor.getActorId(actor)
+        rechargeitem.resetRecord(actor)
+    end
     LActor.giveAwards(actor, rewards, "vip rewards")
 end
 
@@ -138,7 +144,7 @@ local function onLogin(actor)
 
     -- 扩展礼包ID
     LDataPack.writeShort(npack, #(VipGiftConfig or {}))
-	for id,_ in ipairs(VipGiftConfig or {}) do
+    for id,_ in ipairs(VipGiftConfig or {}) do
         LDataPack.writeUInt(npack, id)
         LDataPack.writeChar(npack, getExtMask(data, id) and 1 or 0)
     end
@@ -246,64 +252,64 @@ end
 
 --请求购买VIP礼包
 local function onBuyGift(actor, packet)
-	local id = LDataPack.readByte(packet)
-	--获取配置
-	local cfg = VipGiftConfig[id]
-	if not cfg then
-		print(LActor.getActorId(actor).." vip.onBuyGift not cfg id:"..id)
-		return
-	end
-	local data = getStaticData(actor)
+    local id = LDataPack.readByte(packet)
+    --获取配置
+    local cfg = VipGiftConfig[id]
+    if not cfg then
+        print(LActor.getActorId(actor).." vip.onBuyGift not cfg id:"..id)
+        return
+    end
+    local data = getStaticData(actor)
     if not data then
         print(LActor.getActorId(actor).." actorvip.onBuyGift data is nil id:"..tostring(id))
         return 
     end
-	--判断是否已经购买
-	-- if System.bitOPMask(data.gift or 0, id) then
+    --判断是否已经购买
+    -- if System.bitOPMask(data.gift or 0, id) then
     if getExtMask(data, id) then
-		print(LActor.getActorId(actor).." vip.onBuyGift gift is buy id:"..id)
-		return
-	end
-	--判断VIP等级
-	if cfg.vipLv > LActor.getVipLevel(actor) then
-		print(LActor.getActorId(actor).." vip.onBuyGift vip lv limit id:"..id..",needLv:"..cfg.vipLv..",curLv:"..LActor.getVipLevel(actor))
-		return
-	end
-	--判断钱是否足够
-	local yb = LActor.getCurrency(actor, NumericType_YuanBao)
-	if cfg.needYb > yb then 
-		print(LActor.getActorId(actor).." vip.onBuyGift yuanbao not enough id:"..id)
-		return 
-	end
-	--判断前置的条件是否都已经购买
-	if cfg.cond then
-		for _,nid in ipairs(cfg.cond) do
-			-- if not System.bitOPMask(data.gift or 0, nid) then
+        print(LActor.getActorId(actor).." vip.onBuyGift gift is buy id:"..id)
+        return
+    end
+    --判断VIP等级
+    if cfg.vipLv > LActor.getVipLevel(actor) then
+        print(LActor.getActorId(actor).." vip.onBuyGift vip lv limit id:"..id..",needLv:"..cfg.vipLv..",curLv:"..LActor.getVipLevel(actor))
+        return
+    end
+    --判断钱是否足够
+    local yb = LActor.getCurrency(actor, NumericType_YuanBao)
+    if cfg.needYb > yb then 
+        print(LActor.getActorId(actor).." vip.onBuyGift yuanbao not enough id:"..id)
+        return 
+    end
+    --判断前置的条件是否都已经购买
+    if cfg.cond then
+        for _,nid in ipairs(cfg.cond) do
+            -- if not System.bitOPMask(data.gift or 0, nid) then
             if not getExtMask(data, nid) then
-				print(LActor.getActorId(actor).." vip.onBuyGift cond not enough id:"..id..",nid:"..nid)
-				return
-			end
-		end
-	end
+                print(LActor.getActorId(actor).." vip.onBuyGift cond not enough id:"..id..",nid:"..nid)
+                return
+            end
+        end
+    end
     -- 判断合服次数
     if cfg.hfTimes and cfg.hfTimes > hefutime.getHeFuCount() then
         print(LActor.getActorId(actor).." vip.onBuyGift hfTimes fail id:"..id..",cfg.hfTimes:"..cfg.hfTimes..",hefutime:"..hefutime.getHeFuCount())
         return
     end
-	--判断背包是否能放得下
-	if not LActor.canGiveAwards(actor, cfg.awards) then
-		print(LActor.getActorId(actor).." vip.onBuyGift not canGiveAwards id:"..id)
-		return
-	end
-	--扣钱
-	LActor.changeYuanBao(actor, 0 - cfg.needYb, "buy vip gift"..tostring(cfg.needYb))
-	--发礼包奖励
-	LActor.giveAwards(actor, cfg.awards, "buy vip gift")
-	--设置已经购买
-	-- data.gift = System.bitOpSetMask(data.gift or 0, id, true)
+    --判断背包是否能放得下
+    if not LActor.canGiveAwards(actor, cfg.awards) then
+        print(LActor.getActorId(actor).." vip.onBuyGift not canGiveAwards id:"..id)
+        return
+    end
+    --扣钱
+    LActor.changeYuanBao(actor, 0 - cfg.needYb, "buy vip gift"..tostring(cfg.needYb))
+    --发礼包奖励
+    LActor.giveAwards(actor, cfg.awards, "buy vip gift")
+    --设置已经购买
+    -- data.gift = System.bitOpSetMask(data.gift or 0, id, true)
     setExtMask(data, id)
-	--返回消息给客户端
-	local npack = LDataPack.allocPacket(actor, Protocol.CMD_Vip, Protocol.sVipCmd_GiftInfo)
+    --返回消息给客户端
+    local npack = LDataPack.allocPacket(actor, Protocol.CMD_Vip, Protocol.sVipCmd_GiftInfo)
     if npack == nil then return end
     -- LDataPack.writeUInt(npack, data.gift or 0)
 

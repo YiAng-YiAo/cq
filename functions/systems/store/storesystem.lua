@@ -111,23 +111,44 @@ function itemShoreBuy(actor, goodsList)
 	end
 
 	local curYuanBao = LActor.getCurrency(actor, NumericType_YuanBao)
-	if (curYuanBao < yuanBao) then
-		return
+	if itemList[1].itemId == 200003 or itemList[1].itemId == 200005 or itemList[1].itemId == 200001 or itemList[1].itemId == 200167 or itemList[1].itemId == 200004 then
+		local curGold = LActor.getCurrency(actor, NumericType_Gold)
+		local gold = yuanBao
+		if curGold < gold then
+			return
+		end
+		LActor.changeCurrency(actor, NumericType_Gold, -gold,"item store buy:"..tostring(itemList[1].itemId) .. ":".. tostring(itemList[1].count*yuanBao))
+
+		print("item store buy:"..tostring(itemList[1].itemId) .. ":".. tostring(itemList[1].count*yuanBao))
+
+		actorevent.onEvent(actor, aeStoreCost, NumericType_Gold, gold)
+		local awardCount = itemList[1].count*100
+		for _,tb in pairs(itemList) do
+			LActor.giveAward(actor, AwardType_Item, tb.itemId, awardCount, "item store buy")
+			var.vipLimitBuy[tb.itemId] = (var.vipLimitBuy[tb.itemId] or 0) + tb.count
+		end
+	else
+		if (curYuanBao < yuanBao) then
+			return
+		end
+		--先扣钱
+		LActor.changeCurrency(actor, NumericType_YuanBao, -yuanBao,
+			"item store buy:"..tostring(itemList[1].itemId) .. ":".. tostring(itemList[1].count))
+
+		print("item store buy:"..tostring(itemList[1].itemId) .. ":".. tostring(itemList[1].count))
+
+		actorevent.onEvent(actor, aeStoreCost, NumericType_YuanBao, yuanBao)
+		--再发货
+		for _,tb in pairs(itemList) do
+			LActor.giveAward(actor, AwardType_Item, tb.itemId, tb.count, "item store buy")
+			var.vipLimitBuy[tb.itemId] = (var.vipLimitBuy[tb.itemId] or 0) + tb.count
+		end
 	end
 
-	--先扣钱
-	LActor.changeCurrency(actor, NumericType_YuanBao, -yuanBao,
-		"item store buy:"..tostring(itemList[1].itemId) .. ":".. tostring(itemList[1].count))
 
-	print("item store buy:"..tostring(itemList[1].itemId) .. ":".. tostring(itemList[1].count))
+	
 
-	actorevent.onEvent(actor, aeStoreCost, NumericType_YuanBao, yuanBao)
-
-	--再发货
-	for _,tb in pairs(itemList) do
-		LActor.giveAward(actor, AwardType_Item, tb.itemId, tb.count, "item store buy")
-		var.vipLimitBuy[tb.itemId] = (var.vipLimitBuy[tb.itemId] or 0) + tb.count
-	end
+	
 
 	sendItemStoreData(actor)
 	--告诉前端购买成功
@@ -316,9 +337,9 @@ function getCurrencyConfig(config)
 	local type, value, discount
 	local currencyRate = math.random(1,100)
 	if (config.ybProb >= currencyRate) then
-		type, value = NumericType_YuanBao, 5 * config.ybPrice
+		type, value = NumericType_YuanBao, config.ybPrice
 	else
-		type, value = NumericType_Gold, 5 * config.goldPrice
+		type, value = NumericType_Gold, config.goldPrice
 	end
 
 	discount = storecommon.discount_0
@@ -488,9 +509,7 @@ function handleQueryFeatsInfo(actor, packet)
 	local pos1 = LDataPack.getPosition(pack)
 	LDataPack.writeInt(pack, count)
 	for k,v in pairs(FeatsStore) do
-		print("in here ++++++++++++++++++++++++++++++++++++")
 		if var.featsExchange[k] then
-			print("+++++++++++++++++++++var.featsExchange[k]:++++++++++++++++++++++++++++++++++++" .. var.featsExchange[k])
 			LDataPack.writeInt(pack, k)
 			LDataPack.writeInt(pack, var.featsExchange[k])
 			count = count + 1

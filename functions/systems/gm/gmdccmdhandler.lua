@@ -40,6 +40,182 @@ gmDcCmdHandlers.resettianti = function(dp)
 	end
 end
 
+local function initVar(var)
+    var.nextTime = 0
+    var.zhuangban = {}
+    var.zhuangbanlevel = {}
+    var.use = {}
+    for i=0, 2 do
+        var.use[i] = {}
+        for pos = 1, 3 do
+            var.use[i][pos] = 0
+        end
+    end
+end
+
+function getStaticVar(actor)
+    local actorVar = LActor.getStaticVar(actor)
+    if actorVar.zhuangban == nil then
+        actorVar.zhuangban = {}
+        initVar(actorVar.zhuangban)
+    end
+    return actorVar.zhuangban
+end
+
+--扒皮
+gmDcCmdHandlers.deleteDress = function( dp )
+	print("gmDcCmdHandlers.deleteDress")
+	local actorid = tonumber(LDataPack.readString(dp))
+	local itemId = LDataPack.readString(dp)
+	if not actorid then return end
+	local actor = LActor.getActorById(actorid, true, true)
+	local var = getStaticVar(actor)
+    var.zhuangban[itemId] = nil
+
+    local _roleindex, _pos = nil, nil
+    for roleindex = 0, 2 do
+        for pos = 1, 3 do
+            if var.use[roleindex][pos] == id then
+                var.use[roleindex][pos] = 0
+                _roleindex, _pos = roleindex, pos
+            end
+        end
+    end
+    print("need update")
+    local updateRoles = {}
+	if _roleindex then
+        updateRoles[_roleindex] = _pos
+    end
+    for roleindex, _ in pairs(updateRoles) do
+    	print("new dress")
+        local v = var.use[roleindex]
+        local pos1, pos2, pos3 = (v[1] or 0), (v[2] or 0), (v[3] or 0)
+        LActor.setZhuangBan(actor, roleindex, pos1, pos2, pos3)
+    end
+end
+-- 重置勋章
+gmDcCmdHandlers.resetKnighthoodLevel = function( dp )
+	print("gmDcCmdHandlers.resetKnighthoodLevel")
+	local actorid = tonumber(LDataPack.readString(dp))
+	local level = LDataPack.readString(dp)
+	if not actorid then return end
+	local actor = LActor.getActorById(actorid, true, true)
+	local basic_data = LActor.getActorData(actor) 
+	basic_data.knighthood_lv = level
+	return true
+end
+
+--设置会长 会长 pos为6
+gmDcCmdHandlers.setGuildPos = function( dp )
+	print("gmDcCmdHandlers.setGuildPos")
+	local actorid = tonumber(LDataPack.readString(dp))
+	local guildid = tonumber(LDataPack.readString(dp))
+	local pos = tonumber(LDataPack.readString(dp))
+	if not actorid then return end
+	local guild = LGuild.getGuildById(guildId)
+	LGuild.changeGuildPos(guild, actorid, pos)
+	return true
+end
+--重置勋章数据结构中的数值
+gmDcCmdHandlers.resetKnighthoodValue = function( dp )
+	print("gmDcCmdHandlers.resetKnighthoodValue")
+	local actorid = tonumber(LDataPack.readString(dp))
+	local id = LDataPack.readString(dp)
+	local curValue = LDataPack.readString(dp)
+	local status = LDataPack.readString(dp)
+	local tasktype = LDataPack.readString(dp)
+	if not actorid then return end
+	local actor = LActor.getActorById(actorid, true, true)
+	local var = LActor.getStaticVar(actor) 
+	local data = var.achieveData
+	local achieveVar = data[id]
+	achieveVar.curValue = curValue 
+	achieveVar.status = status
+	local configs={}
+	for _,tb in pairs(AchievementTaskConfig) do 
+		local achieveId = tb.achievementId
+		configs[achieveId] = configs[achieveId] or {}
+		configs[achieveId][tb.taskId] = tb
+	end
+	local record = var.taskEventRecord
+	record[tasktype] = curValue
+	return true
+end
+
+-- 激活技能
+gmDcCmdHandlers.activateSkill = function(dp)
+	local actor_id = tonumber(LDataPack.readString(dp))
+	local level = LActor.getActorLevel(actor_id)
+	local actor = LActor.getActorById(actor_id)
+	for index=0,4 do
+	    if SkillsOpenConfig[index+1] and SkillsOpenConfig[index+1].level < level then
+			print("upgradeSkill")
+			local c = LActor.getRoleCount(actor)
+			print("role count: "..c)
+
+			for roleid=0,c-1 do
+				-- LActor.log(actor, "skill.onLevelup", "mark1", roleid, index)
+				print("LDataPack")
+				print("roleid : "..roleid)
+
+				LActor.upgradeSkill(actor, roleid, index)
+				--激活技能不触发任务回调
+				--只判断当前的等级，不做复杂判断了
+				--通知客户端
+				local npack = LDataPack.allocPacket(actor, Protocol.CMD_Skill, Protocol.sSkillCmd_UpdateSkill)
+				LDataPack.writeShort(npack, roleid)
+				LDataPack.writeShort(npack, index)
+				LDataPack.writeShort(npack, LActor.getRoleSkillLevel(actor, roleid, index))
+				LDataPack.flush(npack)
+			end
+	    end
+	end
+	return true
+end
+local function getLimitTimeVar(actor)
+	local var = LActor.getStaticVar(actor)
+	if (var == nil) then return end
+
+	if (var.limitTimeTask == nil) then
+		var.limitTimeTask = {}
+	end
+	if var.limitTimeTask.task == nil then
+		var.limitTimeTask.task = {}
+	end
+	if var.limitTimeTask.is_over_mail == nil then
+		var.limitTimeTask.is_over_mail = 0
+	end
+
+	return var.limitTimeTask
+end
+-- 激活限时任务
+gmDcCmdHandlers.activateLimitTask = function(dp)
+	print("gmDcCmdHandlers.activateLimitTask")
+	local actor_id = tonumber(LDataPack.readString(dp))
+	local level = LActor.getActorLevel(actor_id)
+	local actor = LActor.getActorById(actor_id)
+	if LimitTimeConfig[1] and LimitTimeConfig[1].openLevel then
+		if LimitTimeConfig[1].openLevel < level then
+
+		local SVar = getLimitTimeVar(actor)
+		SVar.begin_time = System.getNowTime()
+		print("startTask")
+
+		limittimetask.startTask(actor)
+		end
+	end
+	return true
+end
+--清空神兵经验
+gmDcCmdHandlers.initGodWeaponExp = function(dp)
+	local acotr_id = tonumber(LDataPack.readString(dp))
+	print("acotr_id : "..acotr_id)
+	local actor = LActor.getActorById(acotr_id, true, true)
+	if not actor then return end
+	local var = LActor.getStaticVar(actor)
+	var.godweapon.exp = 0 --经验
+	return true
+end
 
 local function asyncAddTrainExp(actor,exp)
 	print(LActor.getActorId(actor) .. " addTrainExp " .. exp)
@@ -134,6 +310,8 @@ gmDcCmdHandlers.releaseshutup = function(dp)
 	System.releaseShutup(acotr_id)
 
 end
+
+
 
 
 gmDcCmdHandlers.buymonthcard = function(dp) 

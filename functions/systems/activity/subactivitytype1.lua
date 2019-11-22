@@ -87,6 +87,13 @@ local function getConsumeYb(actor, id)
 end
 
 local function checkLevelReward(index, config, actor, record, gdata, id)
+	if id==1006 then
+		local isInvestGrowth = checkISInvestGrowth(actor,id)
+		if isInvestGrowth==false then
+			LActor.sendTipWithId(actor, 8)
+			return false
+		end
+	end
 	if config[index] == nil then
 		return false
 	end
@@ -228,6 +235,47 @@ local function onUseYB(id, conf)
 		end
 	end
 end
+--检查是否投资成长基金
+function checkISInvestGrowth(actor, id)
+    print("checkISInvestGrowth")
+    local record = activitysystem.getSubVar(actor,id)
+    --table.print(var)
+    print(record.growthStatus)
+    if record.growthStatus == nil or record.growthStatus == 0 then
+        print("false")
+        return false
+    else
+        print("true")
+        return true
+    end        
+end
+--投资
+function investmentGrowth(actor, id)
+    print("investmentGrowth")
+    local var = activitysystem.getSubVar(actor,id)
+    var.growthStatus = true
+    local investStatus = 0
+    if var.growthStatus then
+        investStatus = 1
+    end
+    local npack = LDataPack.allocPacket(actor, Protocol.CMD_Activity, 32)
+    LDataPack.writeInt(npack, investStatus)
+    LDataPack.flush(npack)
+end
+-- 登录
+local function onLogin( id, conf )
+	return function ( actor )
+		--发送是否投资成长基金
+		local isInvestGrowth = checkISInvestGrowth(actor,id)
+		local growthStatus = 0 
+		if isInvestGrowth then
+			growthStatus = 1
+		end
+		local npack = LDataPack.allocPacket(actor, Protocol.CMD_Activity, 32)
+		LDataPack.writeInt(npack, growthStatus)
+		LDataPack.flush(npack)
+	end
+end
 
 local function initFunc(id, conf)
 	local needRegEvent = false
@@ -241,6 +289,9 @@ local function initFunc(id, conf)
 	--有consumeYuanbao字段就监听消费
 	if needRegEvent then
 		actorevent.reg(aeConsumeYuanbao, onUseYB(id, conf))
+	end
+	if id == 1006 then
+		actorevent.reg(aeUserLogin, onLogin(id, conf))
 	end
 end
 

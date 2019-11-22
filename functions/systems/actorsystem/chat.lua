@@ -5,7 +5,6 @@ global_chat_cd         = ChatConstConfig.chatCd
 global_chat_list_max   = ChatConstConfig.saveChatListSize
 global_chat_char_len   = ChatConstConfig.chatLen
 global_chat_send_level = ChatConstConfig.openLevel
-global_chat_send_zslevel = ChatConstConfig.openzhuanshenLevel
 
 
 local function chsize(char)
@@ -226,12 +225,12 @@ function sendGlobalMsg(actor,channe,msg)
 	local level = LActor.getZhuanShengLevel(actor) * 1000
 	level = level + LActor.getLevel(actor)
 	if level < global_chat_send_level then 
-		print("global chat level")
+		print("global chat level.......")
 		local totalcash = LActor.getRecharge(actor)
 		print(totalcash)
-		if totalcash < 100000 then 
+		if totalcash < 20000 then 
 			print("........global chat level")
-			sendSystemTips(actor,1,2,global_chat_send_zslevel.."转或充值100元开启世界聊天")
+			sendSystemTips(actor,1,2,global_chat_send_level.."级或首充开启世界聊天")
 			return false
 		end
 	end

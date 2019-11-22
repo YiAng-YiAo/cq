@@ -42,8 +42,12 @@ function onFeeCallback(packet)
 		monthcard.buyMonth(actorid)
     elseif count == PrivilegeData.priviMoney then
         privilegemonthcard.buyPrivilegeMonth(actorid)
-	elseif count == PrivilegeData.priviMoney then 
-            privilegemonthcard.buyPrivilegeMonth(actorid)
+	elseif count == MonthCardConfig.investMoney then 
+            local actor = LActor.getActorById(actorid)
+            subactivitytype5.investment(actor,1005)
+    elseif count == MonthCardConfig.growthFund then 
+            local actor = LActor.getActorById(actorid)
+            subactivitytype1.investmentGrowth(actor,1006)
 	else
 		LActor.addRechargeOffline(actorid, count, itemid)
 		--LActor.addRechargeOffline(openid, itemid)

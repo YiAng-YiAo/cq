@@ -209,6 +209,9 @@ local function writeRecord( npack, record, conf, id, actor )
 		LDataPack.writeByte(npack, cfg.discountImg or 0)
 		-- 是否已经购买
 		LDataPack.writeByte(npack, items[i].flag and 1 or 0)
+		LDataPack.writeByte(npack,  0)
+		LDataPack.writeByte(npack,  0)
+		LDataPack.writeShort(npack,  cfg.exchange or 0)
 	end
 
 	-- 积分
@@ -265,6 +268,12 @@ local function checkBuyItem( actor, id, productId, conf, record )
 		print("subactivitytype22 checkBuyItem ybPrice not enouth,actor:"..LActor.getActorId(actor)..",id:"..id
 			..",productId:"..productId..",conf[productId].ybPrice:"
 			..",yb:"..LActor.getCurrency(actor, NumericType_YuanBao))
+		return false
+	end
+	-- 物品数量不足
+	local conf2 = ActivityType22_1Config[id][1]
+	if conf.exchange and LActor.getItemCount(actor, conf2.costItem) < conf.exchange then
+		print("exhcange count is not enough")
 		return false
 	end
 	-- 没有物品
@@ -492,6 +501,34 @@ local function freshItems( actor, id, conf, record, isInit )
 	end
 end
 
+local function itemCost(actor, id, productId, conf, record)
+	local conf2 = ActivityType22_1Config[id][1]
+	if not conf[productId] then
+		-- 传入的参数错误
+		print("subactivitytype22 buyItem error,actor:"..LActor.getActorId(actor)..",zsLevel:"..LActor.getZhuanShengLevel(actor)
+			..",id:"..id..",productId:"..productId)
+		return
+	end
+	-- 商品配置
+	local cfg = conf[productId]
+	if checkBuyItem(actor, id, productId, cfg, record) then
+		print("subactivitytype22 buyItem,actor:"..LActor.getActorId(actor)..",id:"..id..",productId:"..productId)
+		-- 扣物品数量
+		if cfg.exchange then
+			LActor.costItem(actor, conf2.costItem, conf.exchange, "type22")
+		end
+		-- 改变购买状态
+		local group = record.data.group
+		for i=1,#group do
+			if group[i].id == productId then
+				group[i].flag = true
+			end
+		end
+		-- 给奖励
+		LActor.giveAward(actor, AwardType_Item, cfg.itemId, cfg.count, "type22 buy")
+	end
+end
+
 -- 购买，兑换，刷新，index表示某种类型，分别为3，4，5，购买，兑换时，后面需要紧接商品ID
 local function getReward( id, typeconfig, actor, record, packet )
 	-- 奖励序号不使用
@@ -509,6 +546,10 @@ local function getReward( id, typeconfig, actor, record, packet )
 	elseif index == 5 then 
 		-- 刷新
 		freshItems(actor, id, typeconfig and typeconfig[id] or {}, record)
+	elseif index == 6 then	
+		-- 道具兑换
+		local productId = LDataPack.readInt(packet)
+		itemCost(actor, id, productId, typeconfig and typeconfig[id] or {}, record)
 	else
 		-- 错误
 		print("subactivitytype22 getReward error,actor:"..LActor.getActorId(actor)..",id:"..id..",index:"..index)

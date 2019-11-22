@@ -1,6 +1,6 @@
 --G-公会战.xlsx 常量配置
 GuildBattleConst={
-	occupationAward = {{type=0,id=2,count=20000},{type=1,id=900009,count=1},{type=1,id=900007,count=1},{type=1,id=900008,count=1}},
+	occupationAward = {{type=0,id=2,count=80000},{type=1,id=900009,count=1},{type=1,id=900007,count=1},{type=1,id=900008,count=1}},
 	gateShieldPercentage = 50,
 	gateShield = 50000000,
 	gateCommonAward = {{type=1,id=200167,count=60},{type=0,id=5,count=500}},

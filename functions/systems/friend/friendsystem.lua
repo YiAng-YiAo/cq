@@ -579,42 +579,11 @@ function utf8len(str)
 	return len
 end
 
-function sendSystemTips(actor,level,pos,tips)
-	local l = LActor.getZhuanShengLevel(actor) * 1000
-	l = l + LActor.getLevel(actor)
-	if l < level then 
-		return
-	end
-	local npack = LDataPack.allocPacket(actor, Protocol.CMD_Chat, Protocol.sChatCmd_Tipmsg)
-	if npack == nil then 
-		return
-	end
-	LDataPack.writeInt(npack,level)
-	LDataPack.writeInt(npack,pos)
-	LDataPack.writeString(npack,tips)
-	LDataPack.flush(npack)
-end
-
 
 local function sChat(actor, pack)
 	local actorBId = LDataPack.readUInt(pack)
 	local content = LDataPack.readString(pack)
-	
-	
-	local level = LActor.getZhuanShengLevel(actor) * 1000
-	level = level + LActor.getLevel(actor)
-	if level < 3000 then 
-		print("+++++++++++++++++++++++++++++++++++++++++++global chat level")
-		local totalcash = LActor.getRecharge(actor)
-		print(totalcash)
-		if totalcash < 100000 then 
-			print(totalcash.."....................................global chat level")
-			sendSystemTips(actor,1,2,"3转或充值100元开启世界聊天")
-			return false
-		end
-	end
-	
-	
+
 	local limit = getFriendContentLimit()
 	if utf8len(content) > limit then
 		local npack = LDataPack.allocPacket(actor, Protocol.CMD_Friend, Protocol.sFriendCmd_Chat)
